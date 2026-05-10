@@ -11,15 +11,15 @@ st.set_page_config(
     layout="wide"
 )
 
-# Professional Sports App UI Styles
+#App UI 
 st.markdown("""
     <style>
-    /* Main Background and Text */
-    .main {
+    /* 1. Main Background */
+    .stApp {
         background-color: #0e1117;
     }
     
-    /* Header Styling */
+    /* 2. Header & Caption Styling */
     .stTitle {
         font-weight: 800 !important;
         letter-spacing: -1px !important;
@@ -33,7 +33,7 @@ st.markdown("""
         margin-bottom: 30px !important;
     }
 
-    /* Professional Match Card */
+    /* 3. Professional Match Card */
     .match-card {
         background: rgba(255, 255, 255, 0.03);
         border: 1px solid rgba(255, 255, 255, 0.1);
@@ -74,7 +74,7 @@ st.markdown("""
         display: inline-block;
     }
 
-    /* Tab Styling */
+    /* 4. Tab Styling */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
     }
@@ -93,13 +93,13 @@ st.markdown("""
         color: white !important;
     }
 
-    /* Sidebar and Dataframe styling */
+    /* 5. Sidebar & Navigation */
     section[data-testid="stSidebar"] {
         background-color: #0d1117;
         border-right: 1px solid rgba(255, 255, 255, 0.1);
     }
     
-    /* Champion Display */
+    /* 6. Champion Display */
     .champ-card {
         background: linear-gradient(145deg, #238636, #1a6328);
         border-radius: 16px;
@@ -121,6 +121,20 @@ st.markdown("""
         font-size: 3em;
         font-weight: 900;
         color: #ffffff;
+    }
+
+    /* 7. Table Highlights (Qualifying & Elimination) */
+    div[data-testid="stTable"] tr:nth-child(1), 
+    div[data-testid="stTable"] tr:nth-child(2) {
+        background-color: rgba(35, 134, 54, 0.2) !important;
+        color: #3fb950 !important;
+        font-weight: bold;
+    }
+
+    div[data-testid="stTable"] tr:nth-child(3), 
+    div[data-testid="stTable"] tr:nth-child(4) {
+        background-color: rgba(248, 81, 73, 0.05) !important;
+        color: #8b949e !important;
     }
     </style>
     """, unsafe_allow_html=True)
