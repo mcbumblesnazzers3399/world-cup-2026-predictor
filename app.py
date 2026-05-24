@@ -358,11 +358,15 @@ for i, g_name in enumerate(groups.keys()):
 
         with col_table:
             if res is not None:
-                # Removed 'Form' from the list of columns to be displayed in the dataframe UI
                 display_df = res[['Team', 'W', 'D', 'L', 'Pts']]
+                
+                # Dynamic solid styler designed specifically for dark-mode dataframes
                 def style_rows(row):
-                    if row.name < 2: return ['background-color: rgba(35, 134, 54, 0.1)'] * len(row)
+                    if row.name < 2: 
+                        # Return solid deep forest green background and high-contrast light green text
+                        return ['background-color: #112e17; color: #3fb950; font-weight: bold;'] * len(row)
                     return [''] * len(row)
+                    
                 st.dataframe(display_df.style.apply(style_rows, axis=1), use_container_width=True, hide_index=True)
 
 # =========================================================
