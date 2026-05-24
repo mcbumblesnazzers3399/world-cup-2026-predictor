@@ -46,5 +46,3 @@ Predictions are built on three weighted factors:
 
 Issues and pull requests are welcome. If you have ideas for improving the algorithm or the interface, open an issue or submit a PR.
 
-```bash
-streamlit run app.py
