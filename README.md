@@ -27,3 +27,7 @@ This is a high-fidelity tournament simulator built with Python and Streamlit. Th
 ### 1. Install Dependencies
 ```bash
 pip install -r requirements.txt
+
+### 2. Launch the Simulator
+```bash
+streamlit run app.py
