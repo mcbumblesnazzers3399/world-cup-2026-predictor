@@ -11,7 +11,7 @@ st.set_page_config(
     layout="wide"
 )
 
-#App UI 
+# App UI 
 st.markdown("""
     <style>
     /* 1. Main Background */
@@ -140,7 +140,31 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # =========================================================
-# DATA LOADING & DYNAMIC FORM LOGIC
+# DATA ALIGNMENT & DICTIONARIES
+# =========================================================
+
+# Dictionary to map simulated team names to their representation in fifa_mens_rank.csv and results.csv
+TEAM_NAME_MAPPINGS = {
+    # Sim Name: (Rank Name, Results Name)
+    "USA": ("USA", "United States"),
+    "Türkiye": ("Turkey", "Turkey"),
+    "South Korea": ("Korea Republic", "South Korea"),
+    "Czechia": ("Czech Republic", "Czech Republic"),
+    "Ivory Coast": ("Côte d'Ivoire", "Ivory Coast"),
+    "DR Congo": ("Congo DR", "DR Congo"),
+    "Cape Verde": ("Cabo Verde", "Cape Verde"),
+    "Bosnia": ("Bosnia and Herzegovina", "Bosnia and Herzegovina"),
+    "Saudi Arabia": ("Saudi Arabia", "Saudi Arabia"),
+}
+
+def get_mapped_names(team):
+    """Returns (rank_name, results_name) based on alignment dictionary."""
+    if team in TEAM_NAME_MAPPINGS:
+        return TEAM_NAME_MAPPINGS[team]
+    return team, team
+
+# =========================================================
+# DATA LOADING & PREPROCESSING (AI-DRIVEN EDA FIXES)
 # =========================================================
 
 @st.cache_data
@@ -150,13 +174,19 @@ def load_all_data():
         rank_df = pd.read_csv("fifa_mens_rank.csv")
         rank_df.columns = rank_df.columns.str.strip()
         rank_df = rank_df.rename(columns={'total.points': 'total_points'})
+        
+        # Sort values and retain the latest entry for each team to use fresh points
         rank_df = rank_df.sort_values("date").drop_duplicates(subset=["team"], keep="last")
         teams_meta = rank_df.set_index('team').to_dict('index')
 
-        # Load Match Results for Form Calculation
-        # (Assuming standard Kaggle results.csv structure: date, home_team, away_team, home_score, away_score)
+        # Load Match Results
         match_df = pd.read_csv("results.csv")
         match_df['date'] = pd.to_datetime(match_df['date'])
+        
+        # TIMELINE SLICE (EDA Improvement): 
+        # Restrict match history to modern post-pandemic era (post-2021) to prevent older generations
+        # from diluting or distorting modern performance momentum metrics.
+        match_df = match_df[match_df['date'] >= '2021-01-01']
         match_df = match_df.sort_values("date", ascending=False)
         
         return teams_meta, match_df
@@ -166,52 +196,66 @@ def load_all_data():
 
 teams_metadata, match_history = load_all_data()
 
+# =========================================================
+# PERFORMANCE & POWER METRICS
+# =========================================================
+
 def calculate_team_momentum(team):
     """
-    Calculates a form multiplier (0.9 to 1.1) based on the last 5 match results
-    from the Kaggle results.csv file.
+    Calculates a form multiplier (0.9 to 1.15) based on the last 5 matches
+    from our filtered, modern post-2021 results.csv file.
     """
     if match_history.empty:
         return 1.0
         
+    # Translate display name to matching historical outcome name
+    _, results_name = get_mapped_names(team)
+        
     # Filter matches where the team played (Home or Away)
-    team_matches = match_history[(match_history['home_team'] == team) | (match_history['away_team'] == team)].head(5)
+    team_matches = match_history[
+        (match_history['home_team'] == results_name) | 
+        (match_history['away_team'] == results_name)
+    ].head(5)
     
     if len(team_matches) == 0:
         return 1.0
         
     points = 0
-    weights = [1.0, 0.8, 0.6, 0.4, 0.2] # Recent matches matter more
+    weights = [1.0, 0.8, 0.6, 0.4, 0.2]  # Recent matches matter more
     
     for i, (_, row) in enumerate(team_matches.iterrows()):
-        is_home = row['home_team'] == team
+        is_home = row['home_team'] == results_name
         if row['home_score'] == row['away_score']:
-            res_points = 1 # Draw
+            res_points = 1  # Draw
         elif (is_home and row['home_score'] > row['away_score']) or (not is_home and row['away_score'] > row['home_score']):
-            res_points = 3 # Win
+            res_points = 3  # Win
         else:
-            res_points = 0 # Loss
+            res_points = 0  # Loss
             
         points += res_points * (weights[i] if i < len(weights) else 0.1)
         
-    # Normalize: Max possible points with these weights is 3 * sum(weights) = 9
+    # Max possible points with these weights is 3 * sum(weights)
     max_pts = sum(weights[:len(team_matches)]) * 3
     normalized_form = points / max_pts if max_pts > 0 else 0.5
     
-    # Map normalized form (0 to 1) to a multiplier (0.9 to 1.15)
-    # This ensures form doesn't completely break the ranking logic but gives a nice edge.
+    # Map normalized form (0 to 1) to a dynamic multiplier (0.9 to 1.15)
     multiplier = 0.9 + (normalized_form * 0.25)
     return multiplier
 
 def get_team_power(team):
-    data = teams_metadata.get(team, {'rank': 50, 'total_points': 1000})
+    """Computes total team power dynamically using mapped rankings & momentum."""
+    rank_name, _ = get_mapped_names(team)
+    
+    # Safely search with aligned names, falling back to clean default estimates
+    data = teams_metadata.get(rank_name, {'rank': 50, 'total_points': 1000})
+    
     base_power = data.get('total_points', 1000) / max(1, data.get('rank', 50))
     
-    # 1. Apply Host Advantage
+    # 1. Apply Host Advantage (2026 World Cup Hosts)
     if team in ['USA', 'Canada', 'Mexico']:
         base_power *= 1.2
         
-    # 2. Apply Dynamic Form Factor from Match History
+    # 2. Apply Dynamic Form Factor from filtered Match History
     momentum = calculate_team_momentum(team)
     base_power *= momentum
     
@@ -240,7 +284,6 @@ def simulate_group(team_list):
     stats = {team: {
         "Team": team, 
         "W": 0, "D": 0, "L": 0, "Pts": 0, 
-        "Form": f"{calculate_team_momentum(team):.2f}x",
         "Strength": get_team_power(team)
     } for team in team_list}
     
@@ -315,14 +358,15 @@ for i, g_name in enumerate(groups.keys()):
 
         with col_table:
             if res is not None:
-                display_df = res[['Team', 'W', 'D', 'L', 'Pts', 'Form']]
+                # Removed 'Form' from the list of columns to be displayed in the dataframe UI
+                display_df = res[['Team', 'W', 'D', 'L', 'Pts']]
                 def style_rows(row):
                     if row.name < 2: return ['background-color: rgba(35, 134, 54, 0.1)'] * len(row)
                     return [''] * len(row)
                 st.dataframe(display_df.style.apply(style_rows, axis=1), use_container_width=True, hide_index=True)
 
 # =========================================================
-# SIDEBAR
+# SIDEBAR & DATA METRIC INSIGHTS
 # =========================================================
 st.sidebar.header("Qualifications")
 thirds = []
@@ -340,6 +384,19 @@ if thirds:
         thirds_df[['Team', 'Pts']].head(8),
         use_container_width=True
     )
+
+# Visual feedback showing active alignment enhancements
+st.sidebar.divider()
+st.sidebar.markdown("""
+<div style="background: rgba(35, 134, 54, 0.1); border: 1px solid rgba(35, 134, 54, 0.3); border-radius: 8px; padding: 12px; margin-top: 15px;">
+    <h5 style="color: #3fb950; margin: 0 0 5px 0; font-size: 0.9em;">🤖 Data Engine Active</h5>
+    <ul style="color: #8b949e; font-size: 0.8em; margin: 0; padding-left: 15px;">
+        <li><b>Timeline Slicing:</b> Modern (Post-2021) Match History utilized</li>
+        <li><b>Name Translation:</b> 9 high-mismatch team mapping rules active</li>
+        <li><b>Fitted Momentum:</b> Dynamic 5-match decay weights applied</li>
+    </ul>
+</div>
+""", unsafe_allow_html=True)
 
 # =========================================================
 # KNOCKOUT STAGE UI
