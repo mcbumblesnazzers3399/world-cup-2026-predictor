@@ -1,33 +1,50 @@
-#  2026 FIFA World Cup Tournament Simulator
+# 2026 FIFA World Cup Tournament Simulator
 
-This is a high-fidelity tournament simulator built with Python and Streamlit. The simulation engine leverages real-world FIFA rankings and historical match data to predict tournament outcomes.
+A high-fidelity tournament simulator built for the 2026 FIFA World Cup, integrating real-world FIFA rankings and historical match data to run a full 48-team bracket simulation.
 
----
+## Live Demo
 
-##  Core Features
+Try the simulator here: [world-cup-2026-predictor](https://world-cup-2026-predictor-rashminshasramay1026.streamlit.app/)
 
-* **Live Data:** Integrates the latest FIFA Men's World Rankings.
-* **Momentum:** Dynamic form analysis based on the team's last 5 matches.
-* **Host Boost:** Custom strength multipliers for the co-hosts (USA, Canada, & Mexico).
-* **New Format:** Full 48-team tournament bracket simulation.
+## Project Structure
 
----
+- `app.py` — Core Streamlit application and UI engine.
+- `requirements.txt` — Required Python libraries for deployment.
+- `fifa_mens_rank.csv` — Current FIFA rankings and points data.
+- `results.csv` — Historical match data used for performance analytics.
 
-##  Project Structure
+## Running Locally
 
-* `app.py` - Main Streamlit application and UI logic.
-* `requirements.txt` - Necessary Python dependencies.
-* `fifa_mens_rank.csv` - Team ranking and points database.
-* `results.csv` - Historical international match data.
+**1. Clone the repository**
 
----
+```bash
+git clone https://github.com/your-username/your-repo-name.git
+cd your-repo-name
+```
 
-##  Setup & Execution
+**2. Install dependencies**
 
-### 1. Install Dependencies
 ```bash
 pip install -r requirements.txt
+```
 
-### 2. Launch the Simulator
+**3. Launch the app**
+
+```bash
+streamlit run app.py
+```
+
+## Methodology
+
+Predictions are built on three weighted factors:
+
+- **FIFA Ranking (60%)** — Baseline team strength derived from current FIFA standings.
+- **Momentum (30%)** — Performance score calculated from each team's last 5 international matches.
+- **Host Advantage (10%)** — A multiplier applied when USA, Canada, or Mexico are playing at home.
+
+## Contributing
+
+Issues and pull requests are welcome. If you have ideas for improving the algorithm or the interface, open an issue or submit a PR.
+
 ```bash
 streamlit run app.py
